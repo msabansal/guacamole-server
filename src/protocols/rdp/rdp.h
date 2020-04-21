@@ -120,6 +120,10 @@ typedef struct guac_rdp_client {
      */
     guac_rdp_print_job* active_job;
 
+    /**
+     * Stream graphic offload data
+     */
+    guac_stream* graphics_stream;
 #ifdef ENABLE_COMMON_SSH
     /**
      * The user and credentials used to authenticate for SFTP.

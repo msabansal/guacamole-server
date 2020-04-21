@@ -395,4 +395,90 @@ BOOL guac_rdp_gdi_desktop_resize(rdpContext* context) {
 
 }
 
+#define UPDATE_TYPE_ORDERS 0x0000
+#define UPDATE_TYPE_BITMAP 0x0001
+#define UPDATE_TYPE_PALETTE 0x0002
+#define UPDATE_TYPE_SYNCHRONIZE 0x0003
 
+#define BITMAP_COMPRESSION 0x0001
+#define NO_BITMAP_COMPRESSION_HDR 0x0400
+
+static BOOL update_write_bitmap_data(wStream* s, BITMAP_DATA* bitmapData)
+{
+	if (!Stream_EnsureRemainingCapacity(s, 64 + bitmapData->bitmapLength))
+		return FALSE;
+
+	Stream_Write_UINT16(s, bitmapData->destLeft);
+	Stream_Write_UINT16(s, bitmapData->destTop);
+	Stream_Write_UINT16(s, bitmapData->destRight);
+	Stream_Write_UINT16(s, bitmapData->destBottom);
+	Stream_Write_UINT16(s, bitmapData->width);
+	Stream_Write_UINT16(s, bitmapData->height);
+	Stream_Write_UINT16(s, bitmapData->bitsPerPixel);
+	Stream_Write_UINT16(s, bitmapData->flags);
+	Stream_Write_UINT16(s, bitmapData->bitmapLength);
+
+	if (bitmapData->flags & BITMAP_COMPRESSION)
+	{
+		if (!(bitmapData->flags & NO_BITMAP_COMPRESSION_HDR))
+		{
+			Stream_Write_UINT16(s,
+			                    bitmapData->cbCompFirstRowSize); /* cbCompFirstRowSize (2 bytes) */
+			Stream_Write_UINT16(s,
+			                    bitmapData->cbCompMainBodySize); /* cbCompMainBodySize (2 bytes) */
+			Stream_Write_UINT16(s, bitmapData->cbScanWidth);     /* cbScanWidth (2 bytes) */
+			Stream_Write_UINT16(s,
+			                    bitmapData->cbUncompressedSize); /* cbUncompressedSize (2 bytes) */
+		}
+
+		Stream_Write(s, bitmapData->bitmapDataStream, bitmapData->bitmapLength);
+	}
+	else
+	{
+		Stream_Write(s, bitmapData->bitmapDataStream, bitmapData->bitmapLength);
+	}
+
+	return TRUE;
+}
+
+static BOOL update_write_bitmap_update(wStream* s,
+                                       const BITMAP_UPDATE* bitmapUpdate)
+{
+	int i;
+
+	if (!Stream_EnsureRemainingCapacity(s, 16))
+		return FALSE;
+
+	Stream_Write_UINT16(s, bitmapUpdate->number); /* numberRectangles (2 bytes) */
+
+	/* rectangles */
+	for (i = 0; i < (int)bitmapUpdate->number; i++)
+	{
+		if (!update_write_bitmap_data(s, &bitmapUpdate->rectangles[i]))
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
+
+
+BOOL guac_rdp_gdi_bitmap_update(rdpContext* context, const BITMAP_UPDATE* bitmapUpdate) {
+    if (!context || !bitmapUpdate)
+        return FALSE;
+
+    guac_client* client = ((rdp_freerdp_context*) context)->client;
+    guac_rdp_client* rdp_client = (guac_rdp_client*) client->data;
+    
+    wStream *s = Stream_New(NULL, 4096);
+    if (s)  {
+        if (update_write_bitmap_update(s, bitmapUpdate)) {
+            guac_protocol_send_blob(client->socket, rdp_client->graphics_stream, Stream_Buffer(s), Stream_Length(s));
+        } else {
+            guac_client_log(client, GUAC_LOG_ERROR, "Failed to write bitmap data");
+        }
+    
+        Stream_Free(s, TRUE);
+    }
+	return TRUE;
+}

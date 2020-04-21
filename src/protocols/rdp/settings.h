@@ -545,7 +545,12 @@ typedef struct guac_rdp_settings {
      * the connection broker, if a connection broker is being used.
      */
     char* load_balance_info;
-
+  
+    /**
+     * Enable offloading of graphics to frontend
+     * 
+     */
+    int enable_graphics_offload;
 } guac_rdp_settings;
 
 /**

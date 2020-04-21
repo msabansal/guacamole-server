@@ -140,6 +140,7 @@ BOOL rdp_freerdp_pre_connect(freerdp* instance) {
     if (!gdi_init(instance, guac_rdp_get_native_pixel_format(FALSE)))
         return FALSE;
 
+    
     /* Set up bitmap handling */
     rdpBitmap bitmap = *graphics->Bitmap_Prototype;
     bitmap.size = sizeof(guac_rdp_bitmap);
@@ -190,6 +191,16 @@ BOOL rdp_freerdp_pre_connect(freerdp* instance) {
     bitmap_cache_register_callbacks(instance->update);
     offscreen_cache_register_callbacks(instance->update);
     palette_cache_register_callbacks(instance->update);
+
+    if (settings->enable_graphics_offload) {
+        guac_client_log(client, GUAC_LOG_INFO,
+                "Enabling graphics offload.");
+	    ZeroMemory(instance->settings->OrderSupport, 32);
+        instance->update->BitmapUpdate = guac_rdp_gdi_bitmap_update;
+        rdp_client->graphics_stream = guac_client_alloc_stream(client);
+        /* Open new pipe stream */
+        guac_protocol_send_pipe(client->socket, rdp_client->graphics_stream, "application/binary", "graphicsoffload");
+}
 
     return TRUE;
 
@@ -500,6 +511,14 @@ static int guac_rdp_handle_connection(guac_client* client) {
     /* Clean up FreeRDP internal GDI implementation */
     gdi_free(rdp_inst);
 
+    if (rdp_client->graphics_stream) {
+        guac_protocol_send_end(client->socket, rdp_client->graphics_stream);
+
+        /* Destroy stream */
+        guac_client_free_stream(client, rdp_client->graphics_stream);
+        rdp_client->graphics_stream = NULL;
+    }
+    
     /* Clean up RDP client context */
     freerdp_context_free(rdp_inst);
 

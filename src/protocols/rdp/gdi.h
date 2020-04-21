@@ -184,4 +184,8 @@ BOOL guac_rdp_gdi_end_paint(rdpContext* context);
  */
 BOOL guac_rdp_gdi_desktop_resize(rdpContext* context);
 
+
+// Bitmap Update order
+BOOL guac_rdp_gdi_bitmap_update(rdpContext* context, const BITMAP_UPDATE* bitmapUpdate);
+
 #endif

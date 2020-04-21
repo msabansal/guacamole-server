@@ -113,6 +113,7 @@ const char* GUAC_RDP_CLIENT_ARGS[] = {
 
     "disable-copy",
     "disable-paste",
+    "graphics-offload",
     NULL
 };
 
@@ -550,6 +551,11 @@ enum RDP_ARGS_IDX {
      * using the clipboard. By default, clipboard access is not blocked.
      */
     IDX_DISABLE_PASTE,
+
+    /**
+     * Move graphics processing to frontend
+     */
+    IDX_ENABLE_GRAPHICS_OFFLOAD,
 
     RDP_ARGS_COUNT
 };
@@ -1019,6 +1025,11 @@ guac_rdp_settings* guac_rdp_parse_args(guac_user* user,
     settings->disable_paste =
         guac_user_parse_args_boolean(user, GUAC_RDP_CLIENT_ARGS, argv,
                 IDX_DISABLE_PASTE, 0);
+
+    /* Parse graphics offload */
+    settings->enable_graphics_offload =
+        guac_user_parse_args_boolean(user, GUAC_RDP_CLIENT_ARGS, argv,
+                IDX_ENABLE_GRAPHICS_OFFLOAD, 0);
 
     /* Success */
     return settings;
