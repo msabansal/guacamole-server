@@ -503,6 +503,8 @@ struct guac_user {
      */
     guac_user_argv_handler* argv_handler;
 
+
+    guac_user_gfx_handler* gfx_handler;
 };
 
 /**

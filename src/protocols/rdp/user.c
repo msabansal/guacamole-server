@@ -20,6 +20,7 @@
 #include "channels/audio-input/audio-input.h"
 #include "channels/cliprdr.h"
 #include "channels/pipe-svc.h"
+#include "channels/gfx/graphics.h"
 #include "common/cursor.h"
 #include "common/display.h"
 #include "config.h"
@@ -116,7 +117,6 @@ int guac_rdp_user_join_handler(guac_user* user, int argc, char** argv) {
 
         /* Inbound arbitrary named pipes */
         user->pipe_handler = guac_rdp_pipe_svc_pipe_handler;
-
     }
 
     return 0;

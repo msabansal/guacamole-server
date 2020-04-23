@@ -21,6 +21,7 @@
 #include "bitmap.h"
 #include "channels/audio-input/audio-buffer.h"
 #include "channels/audio-input/audio-input.h"
+#include "channels/gfx/graphics.h"
 #include "channels/cliprdr.h"
 #include "channels/disp.h"
 #include "channels/pipe-svc.h"
@@ -77,19 +78,25 @@
 #include <time.h>
 
 BOOL rdp_freerdp_pre_connect(freerdp* instance) {
-
+    
+    
     rdpContext* context = instance->context;
     rdpGraphics* graphics = context->graphics;
 
     guac_client* client = ((rdp_freerdp_context*) context)->client;
     guac_rdp_client* rdp_client = (guac_rdp_client*) client->data;
     guac_rdp_settings* settings = rdp_client->settings;
-
+    guac_client_log(client, GUAC_LOG_INFO,
+        "Preconnect started.");
     /* Push desired settings to FreeRDP */
     guac_rdp_push_settings(client, settings, instance);
 
     /* Init FreeRDP add-in provider */
     freerdp_register_addin_provider(freerdp_channels_load_static_addin_entry, 0);
+
+    if (settings->enable_graphics_offload) {
+        guac_rdp_graphics_load_plugin(context);
+    }
 
     /* Load "disp" plugin for display update */
     if (settings->resize_method == GUAC_RESIZE_DISPLAY_UPDATE)
@@ -104,6 +111,7 @@ BOOL rdp_freerdp_pre_connect(freerdp* instance) {
     /* Load "cliprdr" service if not disabled */
     if (!(settings->disable_copy && settings->disable_paste))
         guac_rdp_clipboard_load_plugin(rdp_client->clipboard, context);
+
 
     /* If RDPSND/RDPDR required, load them */
     if (settings->printing_enabled
@@ -200,7 +208,7 @@ BOOL rdp_freerdp_pre_connect(freerdp* instance) {
         rdp_client->graphics_stream = guac_client_alloc_stream(client);
         /* Open new pipe stream */
         guac_protocol_send_pipe(client->socket, rdp_client->graphics_stream, "application/binary", "graphicsoffload");
-}
+    }
 
     return TRUE;
 
@@ -401,6 +409,7 @@ static int guac_rdp_handle_connection(guac_client* client) {
 
     /* Set default pointer */
     guac_common_cursor_set_pointer(rdp_client->display->cursor);
+
 
     /* Connect to RDP server */
     if (!freerdp_connect(rdp_inst)) {

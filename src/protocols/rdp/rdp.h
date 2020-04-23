@@ -21,6 +21,7 @@
 #define GUAC_RDP_H
 
 #include "channels/audio-input/audio-buffer.h"
+
 #include "channels/cliprdr.h"
 #include "channels/disp.h"
 #include "common/clipboard.h"
@@ -162,6 +163,7 @@ typedef struct guac_rdp_client {
      */
     pthread_mutexattr_t attributes;
 
+    IWTSVirtualChannel* gfx_channel;
 } guac_rdp_client;
 
 /**

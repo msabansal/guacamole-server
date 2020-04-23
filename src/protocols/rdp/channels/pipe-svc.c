@@ -126,28 +126,46 @@ guac_rdp_pipe_svc* guac_rdp_pipe_svc_remove(guac_client* client, const char* nam
 
 }
 
+static int guac_rdp_client_data_recieve(guac_user* user, guac_stream* stream,
+        void* data, int length) {
+    guac_client* client = user->client;
+    guac_rdp_client* rdp_client = (guac_rdp_client*) client->data;
+    if (rdp_client->gfx_channel) {
+        guac_client_log(client, GUAC_LOG_INFO, "Write GFX Channel %d", length);
+        UINT error = rdp_client->gfx_channel->Write(rdp_client->gfx_channel, (UINT32)length, (BYTE*)data,
+                                        NULL);
+        return error;
+    } else  {
+        guac_client_log(client, GUAC_LOG_ERROR, "Cannot recieve data as gfx channel is null");
+        return 1;
+    }
+}
+
 int guac_rdp_pipe_svc_pipe_handler(guac_user* user, guac_stream* stream,
         char* mimetype, char* name) {
 
-    guac_rdp_pipe_svc* pipe_svc = guac_rdp_pipe_svc_get(user->client, name);
-
-    /* Fail if no such SVC */
-    if (pipe_svc == NULL) {
-        guac_user_log(user, GUAC_LOG_WARNING, "User requested non-existent "
-                "pipe (no such SVC configured): \"%s\"", name);
-        guac_protocol_send_ack(user->socket, stream, "FAIL (NO SUCH PIPE)",
-                GUAC_PROTOCOL_STATUS_CLIENT_BAD_REQUEST);
-        guac_socket_flush(user->socket);
-        return 0;
+    if (strcmp("guacgfx", name) == 0) {
+        stream->blob_handler = guac_rdp_client_data_recieve;
+    } else {
+        guac_rdp_pipe_svc* pipe_svc = guac_rdp_pipe_svc_get(user->client, name);
+        /* Fail if no such SVC */
+        if (pipe_svc == NULL) {
+            guac_user_log(user, GUAC_LOG_WARNING, "User requested non-existent "
+                    "pipe (no such SVC configured): \"%s\"", name);
+            guac_protocol_send_ack(user->socket, stream, "FAIL (NO SUCH PIPE)",
+                    GUAC_PROTOCOL_STATUS_CLIENT_BAD_REQUEST);
+            guac_socket_flush(user->socket);
+            return 0;
+        }
+        else
+            guac_user_log(user, GUAC_LOG_DEBUG, "Inbound half of channel \"%s\" "
+                    "connected.", name);
+        /* Init stream data */
+        stream->data = pipe_svc;
+        stream->blob_handler = guac_rdp_pipe_svc_blob_handler;
     }
-    else
-        guac_user_log(user, GUAC_LOG_DEBUG, "Inbound half of channel \"%s\" "
-                "connected.", name);
 
-    /* Init stream data */
-    stream->data = pipe_svc;
-    stream->blob_handler = guac_rdp_pipe_svc_blob_handler;
-
+    
     return 0;
 
 }

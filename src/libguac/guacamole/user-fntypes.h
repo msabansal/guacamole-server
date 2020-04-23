@@ -454,5 +454,6 @@ typedef int guac_user_get_handler(guac_user* user, guac_object* object,
 typedef int guac_user_put_handler(guac_user* user, guac_object* object,
         guac_stream* stream, char* mimetype, char* name);
 
+typedef int guac_user_gfx_handler(guac_user* user, guac_stream* stream);
 #endif
 

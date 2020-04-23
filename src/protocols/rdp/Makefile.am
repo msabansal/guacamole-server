@@ -42,6 +42,7 @@ libguac_client_rdp_la_SOURCES =                  \
     bitmap.c                                     \
     channels/audio-input/audio-buffer.c          \
     channels/audio-input/audio-input.c           \
+    channels/gfx/graphics.c           \
     channels/cliprdr.c                           \
     channels/common-svc.c                        \
     channels/disp.c                              \
@@ -86,6 +87,7 @@ noinst_HEADERS =                                 \
     bitmap.h                                     \
     channels/audio-input/audio-buffer.h          \
     channels/audio-input/audio-input.h           \
+    channels/gfx/graphics.h           \
     channels/cliprdr.h                           \
     channels/common-svc.h                        \
     channels/disp.h                              \
@@ -117,6 +119,7 @@ noinst_HEADERS =                                 \
     plugins/channels.h                           \
     plugins/guacai/guacai-messages.h             \
     plugins/guacai/guacai.h                      \
+    plugins/guacgfx/guacgfx.h                      \
     plugins/ptr-string.h                         \
     pointer.h                                    \
     print-job.h                                  \
@@ -150,7 +153,8 @@ libguac_client_rdp_la_LIBADD = \
 
 freerdp_LTLIBRARIES =            \
     libguac-common-svc-client.la \
-    libguacai-client.la
+    libguacai-client.la\
+    libguacgfx-client.la
 
 freerdpdir = @FREERDP2_PLUGIN_DIR@
 
@@ -198,6 +202,34 @@ libguacai_client_la_LDFLAGS =      \
 libguacai_client_la_LIBADD = \
     @COMMON_LTLIB@           \
     @LIBGUAC_LTLIB@
+
+
+#
+# GFX Input
+#
+
+libguacgfx_client_la_SOURCES =           \
+    channels/pipe-svc.c \
+    channels/common-svc.c \
+    plugins/guacgfx/guacgfx.c             \
+    plugins/ptr-string.c
+
+libguacgfx_client_la_CFLAGS = \
+    -Werror -Wall -Iinclude  \
+    @COMMON_INCLUDE@         \
+    @COMMON_SSH_INCLUDE@     \
+    @LIBGUAC_INCLUDE@        \
+    @RDP_CFLAGS@
+
+libguacgfx_client_la_LDFLAGS =      \
+    -module -avoid-version -shared \
+    @PTHREAD_LIBS@                 \
+    @RDP_LIBS@
+
+libguacgfx_client_la_LIBADD = \
+    @COMMON_LTLIB@           \
+    @LIBGUAC_LTLIB@
+
 
 #
 # Optional SFTP support

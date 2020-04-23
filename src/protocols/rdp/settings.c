@@ -1209,7 +1209,6 @@ void guac_rdp_push_settings(guac_client* client,
     rdp_settings->DisableMenuAnims = !guac_settings->menu_animations_enabled;
     rdp_settings->DisableThemes = !guac_settings->theming_enabled;
     rdp_settings->AllowDesktopComposition = guac_settings->desktop_composition_enabled;
-
     /* Client name */
     if (guac_settings->client_name != NULL) {
         guac_strlcpy(rdp_settings->ClientHostname, guac_settings->client_name,
@@ -1372,6 +1371,15 @@ void guac_rdp_push_settings(guac_client* client,
     rdp_settings->OrderSupport[NEG_GLYPH_INDEX_INDEX] = !guac_settings->disable_glyph_caching;
     rdp_settings->OrderSupport[NEG_FAST_INDEX_INDEX] = !guac_settings->disable_glyph_caching;
     rdp_settings->OrderSupport[NEG_FAST_GLYPH_INDEX] = !guac_settings->disable_glyph_caching;
+
+    if (guac_settings->enable_graphics_offload) {
+        rdp_settings->SupportGraphicsPipeline = TRUE;
+        rdp_settings->FastPathOutput = TRUE;
+        rdp_settings->LargePointerFlag =
+            0x0002; /* (LARGE_POINTER_FLAG_96x96 | LARGE_POINTER_FLAG_384x384); */
+        rdp_settings->FrameMarkerCommandEnabled = TRUE;
+        rdp_settings->ColorDepth = 32;
+    }
 
 #ifdef HAVE_RDPSETTINGS_ALLOWUNANOUNCEDORDERSFROMSERVER
     /* Do not consider server use of unannounced orders to be a fatal error */

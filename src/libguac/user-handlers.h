@@ -120,6 +120,8 @@ __guac_instruction_handler __guac_handle_file;
  */
 __guac_instruction_handler __guac_handle_pipe;
 
+__guac_instruction_handler __guac_handle_gfx;
+
 /**
  * Internal initial handler for the argv instruction. When a argv instruction
  * is received, this handler will be called. The client's argv handler will
