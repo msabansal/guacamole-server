@@ -204,6 +204,7 @@ BOOL rdp_freerdp_pre_connect(freerdp* instance) {
         guac_client_log(client, GUAC_LOG_INFO,
                 "Enabling graphics offload.");
 	    ZeroMemory(instance->settings->OrderSupport, 32);
+        instance->settings->DrawAllowDynamicColorFidelity = TRUE;
         instance->update->BitmapUpdate = guac_rdp_gdi_bitmap_update;
         rdp_client->graphics_stream = guac_client_alloc_stream(client);
         /* Open new pipe stream */
