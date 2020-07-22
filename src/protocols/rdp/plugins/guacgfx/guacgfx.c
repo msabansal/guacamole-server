@@ -61,6 +61,46 @@ static UINT guac_rdp_gfx_data(IWTSVirtualChannelCallback* channel_callback,
 
 }
 
+static int guac_rdp_gfx_ack(guac_user* user,
+        guac_stream* stream, char* message, guac_protocol_status status) {
+    guac_rdp_gfx_channel_callback* ai_channel_callback =
+        (guac_rdp_gfx_channel_callback*) stream->data;
+
+    guac_client* client = ai_channel_callback->client;
+    guac_rdp_client* rdp_client = (guac_rdp_client*) client->data;
+
+    rdp_client->gfx_channel = ai_channel_callback->channel;
+
+    /* Log closure of GRAPHICS_INPUT channel */
+    guac_client_log(client, GUAC_LOG_INFO,
+            "GRAPHICS_INPUT ack received %s", message);
+
+    return CHANNEL_RC_OK;
+}
+
+void* gauc_rdp_gfx_create_stream(guac_user* user, void* data) {
+
+    /* Allocate nothing if user does not exist */
+    if (user == NULL)
+        return NULL;
+
+    /* Allocate stream for print job output */
+    guac_stream* stream = guac_user_alloc_stream(user);
+    if (stream == NULL)
+        return NULL;
+    stream->data = data;
+    stream->ack_handler = guac_rdp_gfx_ack;
+    return stream;
+}
+
+void* gauc_rdp_gfx_free_stream(guac_user* user, void* data) {
+    /* Allocate stream for print job output */
+    guac_stream* stream = (guac_stream*) data;
+    if (user != NULL && stream != NULL)
+        guac_user_free_stream(user, stream);
+    return NULL;
+}
+
 /**
  * Function description
  *
@@ -213,8 +253,8 @@ static UINT guac_rdp_gfx_close(IWTSVirtualChannelCallback* channel_callback) {
     if (ai_channel_callback->graphics_stream) {
         guac_protocol_send_end(client->socket, ai_channel_callback->graphics_stream);
 
-        /* Destroy stream */
-        guac_client_free_stream(client, ai_channel_callback->graphics_stream);
+        guac_client_for_owner(client, gauc_rdp_gfx_free_stream, ai_channel_callback->graphics_stream);
+    
         ai_channel_callback->graphics_stream = NULL;
     }
 
@@ -231,7 +271,6 @@ static UINT guac_rdp_gfx_close(IWTSVirtualChannelCallback* channel_callback) {
     return CHANNEL_RC_OK;
 
 }
-
 
 /**
  * Function description
@@ -251,13 +290,13 @@ static UINT guac_rdp_gfx_open(IWTSVirtualChannelCallback* channel_callback)
     /* Log closure of GRAPHICS_INPUT channel */
     guac_client_log(client, GUAC_LOG_INFO,
             "GRAPHICS_INPUT channel on open");
-            guac_stream* stream =   guac_client_alloc_stream(client);
 
-    stream->data = ai_channel_callback;
-    /* Open new pipe stream */
+    guac_stream* stream = (guac_stream*) guac_client_for_owner(client, gauc_rdp_gfx_create_stream, ai_channel_callback);
+    
     guac_protocol_send_pipe(client->socket, stream, "application/binary", "guacgfx");
 
     ai_channel_callback->graphics_stream = stream;
+    
     return CHANNEL_RC_OK;
 }
 
